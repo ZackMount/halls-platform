@@ -1,0 +1,39 @@
+{% macro component_number(value) -%}{% if value is number and value is not boolean %}{{ ('%.2f'|format(value)).rstrip('0').rstrip('.') }}{% else %}—{% endif %}{%- endmacro %}
+{% macro reference_time(seconds) -%}{% set ticks=(seconds*100+0.5)|int %}{{ '%02d:%02d.%02d'|format(ticks//6000,(ticks//100)%60,ticks%100) }}{%- endmacro %}
+{% set report=data.report or {} %}{% set perf=report.performance or {} %}{% set reference=perf.raceReference or {} %}
+<a class="row-link" href="/leaderboard"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M19 12H5m6-6-6 6 6 6"/></svg> 返回成绩榜</a>
+<div class="section-top spacer"><div><div class="eyebrow">RUN / {{ data.id[:8]|upper }}</div><h1 data-no-i18n>{{ data.name }}</h1></div><div><span class="tag {{ 'warn' if data.board=='unranked' else 'good' }}">{{ labels.get(data.board,data.board) }}</span><span class="tag">{{ labels.get(data.decision,data.decision) }}</span></div></div>
+<div class="detail-meta"><span>{{ platform }}</span><span>通关 <time data-utc="{{ (report.proof or {}).get('completedAt',0) }}">—</time></span><span>上传 <time data-utc="{{ data.created }}">—</time></span><span class="mono">{{ duration(data.duration) }}</span></div>
+<div>{% for tag in data.tags %}<span class="tag">{{ tag }}</span>{% endfor %}</div>
+{% if data.playable %}<div class="replay-slot" data-replay-kind="run" data-replay-id="{{ data.id }}" data-replay-base="{{ data.replayBase or '' }}" aria-label="HALLS 交互回放"><span class="replay-placeholder">正在载入回放…</span></div>{% else %}<div class="callout spacer">此记录暂不支持安全回放。</div>{% endif %}
+<div class="report-layout run-report-layout">
+  <details class="panel run-disclosure run-score" data-run-disclosure="score">
+    <summary>
+      <span class="run-summary-line"><span class="run-section-title">成绩评价</span><span class="run-fold-label" aria-hidden="true"><span class="run-when-closed">展开</span><span class="run-when-open">收起</span></span></span>
+      <span class="grades">{% set score=data.score if data.board=='ranked' and data.score is not none else perf.referenceScore %}{{ '%.2f'|format(score) if score is number else '—' }}<small> /100</small></span>
+    </summary>
+    <div class="run-disclosure-content">
+      <p>{{ perf.description or '' }}</p>
+      {% for key in ['completion','pace','coins','tactics'] %}{% if key in (perf.components or {}) %}{% set show_reference=key=='pace' and reference.available %}<div class="breakdown score-component{{ ' with-reference' if show_reference else '' }}"><span>{{ {'completion':'通关','pace':'竞速','coins':'金币','tactics':'战术'}[key] }}</span><span class="score-component-value mono"><strong class="score-earned">{{ component_number(perf.components[key]) }}</strong><span class="score-maximum">/ {{ component_number((perf.componentMaxima or {}).get(key)) }}</span></span></div>{% if show_reference %}<div class="race-reference"><span>理论最短时间</span><span class="mono">{% if reference.approximate %}<span>约</span> {% endif %}{{ reference_time(reference.seconds) }}</span></div>{% endif %}{% endif %}{% endfor %}
+      {% set total=(perf.components or {}).get('integrity',0) %}{% set show_total=total is number and (total|abs) >= 0.005 %}
+      {% set automation=perf.automation or {} %}{% set deduction=automation.get('deduction',0) %}
+      {% set show_automation=automation.available and automation.suspicion is number and automation.suspicion > 50 and automation.suspicion <= 100 and deduction is number and deduction >= 0.005 %}
+      {% set adjustments=perf.adjustments or {} %}{% set losses=adjustments.get('items',[])|selectattr('points','lt',0)|list %}{% set notes=adjustments.notes or [] %}
+      {% if show_total or show_automation or losses or notes %}<section class="score-adjustments">
+        {% if show_total %}<div class="breakdown"><span>评判调整</span><span class="mono">{{ '%.2f'|format(total) }}</span></div>{% endif %}
+        {% if show_automation %}<div class="breakdown"><span>自动化可疑度</span><span class="mono">{{ '%.2f'|format(automation.suspicion) }}%</span></div>{% endif %}
+        {% for item in losses %}<div class="score-loss"><div><strong>{{ item.title }}</strong><span class="mono">{{ '%.2f'|format(item.points) }}</span></div><p>{{ item.reason }}</p></div>{% endfor %}
+        {% for note in notes %}<p class="score-note">{{ note }}</p>{% endfor %}
+      </section>{% endif %}
+    </div>
+  </details>
+  <details class="panel run-disclosure public-report run-checks" data-run-disclosure="report">
+    <summary>
+      <span class="run-summary-line"><span class="run-section-title">完整评判报告</span><span class="run-fold-label" aria-hidden="true"><span class="run-when-closed">展开</span><span class="run-when-open">收起</span></span></span>
+      <span class="run-verdict tag {{ 'good' if report.verdict=='accepted' else 'warn' }}">{{ labels.get(report.verdict,report.verdict or '未判定') }}</span>
+    </summary>
+    <div class="run-disclosure-content">
+      {% if report.rules is defined %}<div class="public-checks">{% for rule in report.rules %}<article class="public-check"><div><h3>{{ rule.title }}</h3><span class="tag {{ 'good' if rule.status=='pass' else 'bad' if rule.status=='fail' else 'warn' }}">{{ labels.get(rule.status,rule.status) }}</span></div><p>{{ rule.summary or '此项尚未完成评判。' }}</p>{% if rule.relatedRuns %}<div class="related-runs">{% for related in rule.relatedRuns %}<a class="row-link" href="/run/{{ related.id }}" data-no-i18n>{{ related.name }}</a>{% endfor %}</div>{% endif %}</article>{% endfor %}</div>{% else %}<p class="error">{{ report.error or '尚未产生评判报告' }}</p>{% endif %}
+    </div>
+  </details>
+</div>

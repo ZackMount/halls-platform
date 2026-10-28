@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';import vm from 'node:vm';import {readFileSync} from 'node:fs';import {webcrypto} from 'node:crypto';
+const handlers={},items=new Map();let fetched=0,online=true,navigationStatus=200,navigationType='text/html';
+const key=x=>new URL(typeof x==='string'?x:x.url,'https://test.local').href;
+const cache={match:async x=>items.get(key(x))?.clone(),put:async(x,r)=>{const b=await r.arrayBuffer();items.set(key(x),new Response(b,{headers:r.headers,status:r.status}));},keys:async()=>[...items.keys()].map(x=>new Request(x))};
+const sandbox={URL,Request,Response,Headers,crypto:webcrypto,console,caches:{open:async()=>cache,keys:async()=>[],delete:async()=>true},fetch:async request=>{fetched++;if(!online)throw new TypeError('Offline');assert.equal(request.headers.has('Range'),false);if(new URL(request.url).pathname==='/replay'){assert.equal(request.cache,'no-store');return new Response('current replay shell',{status:navigationStatus,headers:{'Content-Type':navigationType}});}return new Response('0123456789');},self:{location:{origin:'https://test.local'},clients:{claim:async()=>{}},skipWaiting:async()=>{},addEventListener:(name,fn)=>handlers[name]=fn}};
+vm.runInNewContext(readFileSync(new URL('../web/sw.js',import.meta.url),'utf8').replace('__ASSET_VERSION__','0123456789abcdef').replace('__REPLAY_SHELL__','/static/0123456789abcdef/replay-assets/index.html').replace('__MEDIA_MAP__','{}'),sandbox);
+async function get(path,headers={},method='GET'){let response;const pending=[];handlers.fetch({request:new Request('https://test.local'+path,{headers,method}),respondWith:p=>response=p,waitUntil:p=>pending.push(p)});const result=await response;await Promise.all(pending);return result;}
+for(const path of ['/','/upload','/preview','/leaderboard','/api/config','/api/pages/upload','/api/replay/id/0','/api/admin/settings','/admin','/download=halls?platform=windows'])assert.equal(await get(path),undefined);
+assert.equal(await get('/static/0123456789abcdef/assets/a.js',{},'POST'),undefined);
+const file='/static/0123456789abcdef/assets/media/test.mp4';
+let [a,b]=await Promise.all([get(file,{Range:'bytes=0-'}),get(file)]);assert.equal(a.status,200);assert.equal(await a.text(),'0123456789');assert.equal(await b.text(),'0123456789');assert.equal(fetched,1);
+let r=await get(file,{Range:'bytes=2-5'});assert.equal(r.status,206);assert.equal(await r.text(),'2345');assert.equal(r.headers.get('Content-Range'),'bytes 2-5/10');
+r=await get(file,{Range:'bytes=-3'});assert.equal(await r.text(),'789');assert.equal((await get(file,{Range:'bytes=99-'})).status,416);assert.equal(fetched,1);
+await get('/static/1111111111111111/assets/new.js');await get('/static/1111111111111111/assets/new.js');assert.equal(fetched,2);
+await get('/static/0123456789abcdef/replay-assets/index.html');assert.equal(fetched,3);
+online=false;assert.equal(await(await get('/replay?run=aaaaaaaaaaaaaaaaaaaaaaaa')).text(),'0123456789','offline uses the previously cached data-free immutable shell');
+online=true;
+for(const query of ['?run=aaaaaaaaaaaaaaaaaaaaaaaa','?run=bbbbbbbbbbbbbbbbbbbbbbbb','?preview=cccccccccccccccccccccccc'])assert.equal(await(await get('/replay'+query)).text(),'current replay shell','online navigation must bypass an old cached shell');
+navigationStatus=503;assert.equal((await get('/replay?run=aaaaaaaaaaaaaaaaaaaaaaaa')).status,503);
+navigationStatus=200;navigationType='application/json';await get('/replay?run=aaaaaaaaaaaaaaaaaaaaaaaa');
+online=false;assert.equal(await(await get('/replay?preview=cccccccccccccccccccccccc')).text(),'current replay shell','HTTP errors and non-HTML responses must not overwrite the offline shell');
+assert.equal(items.has(key('/replay?run=aaaaaaaaaaaaaaaaaaaaaaaa')),false,'no record-specific page or API payload is stored');
+console.log('Online navigation freshness, offline shell fallback, error isolation, cross-version cache hits, coalesced full media transfers and cached ranges passed');

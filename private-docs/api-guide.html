@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>API 文档 · HALLS</title><link rel="icon" href="/assets/favicon.svg"><link rel="preload" href="/assets/fonts/ui.woff2" as="font" type="font/woff2" crossorigin><style id="ui-fonts">__UI_FONTS__</style><style>__SITE_CSS__</style><style>__GUIDE_CSS__</style></head>
+<body class="api-guide"><header class="mast"><a class="brand" href="/admin">HALLS</a><span class="guide-header-label">API 文档</span><a class="button" href="/admin">管理控制台</a></header>
+<main class="guide-main"><div class="guide-heading"><div><div class="eyebrow">INTEGRATION REFERENCE / 2.0</div><h1>API 文档</h1><p>凭证提交、结果查询与赛事接入。</p></div><div class="actions"><a class="button" href="/api/admin/openapi.json" download>OpenAPI 3.1</a><a class="button primary" href="/api/admin/guide">下载文档</a></div></div>
+<div class="guide-layout"><nav class="guide-toc" aria-label="文档目录"><a href="#overview">接入约定</a><a href="#submit">提交成绩</a><a href="#result">查询结果</a><a href="#report">报告结构</a><a href="#koh">KOH 赛事</a><a href="#public">公开数据与回放</a><a href="#admin">管理接口</a><a href="#errors">错误与重试</a></nav><article>
+<section id="overview"><h2>接入约定</h2><dl class="guide-facts"><div><dt>服务地址</dt><dd><code>https://halls.z4ck.dev</code></dd></div><div><dt>传输</dt><dd>HTTPS；JSON 使用 UTF-8</dd></div><div><dt>文件上限</dt><dd>15 MiB（15,728,640 字节）</dd></div><div><dt>时间</dt><dd>Unix 秒；时长字段以秒为单位</dd></div></dl>
+<p>在管理控制台的访问设置中开启成绩上传和 API Key 上传，再生成对应用途的 Key。</p>
+<div class="table-wrap"><table><thead><tr><th>凭据</th><th>传递方式</th><th>权限</th></tr></thead><tbody><tr><td>上传 Key</td><td>路径中的 <code>{key}</code></td><td><code>/api/submit/…</code></td></tr><tr><td>KOH Key</td><td>路径中的 <code>{key}</code></td><td><code>/api/koh/…</code></td></tr><tr><td>查询回执</td><td><code>Authorization: Bearer {receipt}</code></td><td>仅查询对应提交</td></tr><tr><td>管理会话</td><td>HttpOnly Cookie；写操作另带 CSRF 头</td><td>管理接口、完整报告和本文档</td></tr></tbody></table></div>
+<p>Key 明文仅在创建时返回一次。撤销可恢复，恢复后继续使用原 Key。Key 和查询回执互不替代。调用程序请发送明确的应用名称，例如 <code>User-Agent: HALLS-API-Client/1.0</code>。</p><div class="guide-note">Key 位于 URL 中。部署时通过环境变量注入，避免记录完整请求地址。公开页面不提供 API 文档或原始凭证下载。</div>
+</section>
+<section id="submit"><h2>提交成绩</h2><div class="endpoint"><span class="method">POST</span><code>/api/submit/{key}</code></div><p>请求体直接发送原始 <code>.hproof</code> 字节，不使用 multipart。服务端完成校验、评判与发布策略处理。</p>
+<div class="table-wrap"><table><thead><tr><th>位置 / 名称</th><th>类型</th><th>要求</th></tr></thead><tbody><tr><td>path · key</td><td>string</td><td>有效的上传用途 Key</td></tr><tr><td>query · name</td><td>string</td><td>必填；规范化后 1–32 个字符，无控制字符，URL 编码</td></tr><tr><td>query · wait</td><td>number</td><td>可选；0–10 秒，默认 0</td></tr><tr><td>header · Content-Type</td><td>string</td><td><code>application/octet-stream</code></td></tr><tr><td>header · X-Proof-SHA256</td><td>string</td><td>可选；64 位小写十六进制。服务端重新计算并核对</td></tr><tr><td>header · X-Source-ID</td><td>string</td><td>可选；来源编号、靶机 Host 或网址，最多 256 字符，仅后台可见</td></tr><tr><td>body</td><td>binary</td><td>308 字节至 15 MiB；正式提交仅接受 HLR5 / 0.11.3</td></tr></tbody></table></div>
+<h3>请求示例</h3><pre><code>HALLS_API_KEY='YOUR_UPLOAD_KEY'
+export HALLS_NAME='Player'
+NAME=$(python3 -c 'import os,urllib.parse; print(urllib.parse.quote(os.environ["HALLS_NAME"]))')
+
+curl --request POST \
+  "https://halls.z4ck.dev/api/submit/${HALLS_API_KEY}?name=${NAME}&amp;wait=0" \
+  --user-agent 'HALLS-API-Client/1.0' \
+  --header 'Content-Type: application/octet-stream' \
+  --header 'X-Source-ID: YOUR_INSTANCE_HOST' \
+  --data-binary @victory.hproof</code></pre><p>保存响应中的 <code>receipt</code>，它仅在本次响应中提供。</p>
+<h3>响应</h3><p><strong>202</strong>：已接收，继续查询。设置 <code>wait</code> 且处理在等待期内结束时返回 <strong>200</strong>。</p><pre><code>{
+  "id": "0123456789abcdef01234567",
+  "status": "queued",
+  "receipt": "YOUR_SUBMISSION_RECEIPT",
+  "statusUrl": "/api/submissions/0123456789abcdef01234567",
+  "report": null,
+  "message": "携带 receipt 轮询 statusUrl 可获取完整报告；请保存回执。"
+}</code></pre><p>重复文件返回 <code>409 / duplicate_hash</code>，不会复用已有成绩或返回其回执。</p>
+<h3>上传前检查摘要</h3><div class="endpoint"><span class="method">POST</span><code>/api/uploads/check</code></div><pre><code>{ "sha256": "64 位小写十六进制摘要" }
+
+// HTTP 200
+{ "duplicate": false }</code></pre><p>该接口不要求 Key，只返回是否已有同文件摘要，不提供成绩或回放。它用于减少重复传输；实际上传仍会再次检查。KOH 接入使用下方的专用预检接口。</p></section>
+<section id="result"><h2>查询结果</h2><div class="endpoint"><span class="method get">GET</span><code>/api/submissions/{id}</code></div><pre><code>curl 'https://halls.z4ck.dev/api/submissions/0123456789abcdef01234567' \
+  --user-agent 'HALLS-API-Client/1.0' \
+  --header 'Authorization: Bearer YOUR_SUBMISSION_RECEIPT'</code></pre><p>建议间隔 2–5 秒轮询，进入终态后停止。回执仅能查询对应记录；不存在的记录和无效回执均返回 404。</p>
+<div class="table-wrap"><table><thead><tr><th>字段</th><th>含义</th></tr></thead><tbody><tr><td>id / name</td><td>记录编号、展示名字</td></tr><tr><td>status</td><td>接收与评判状态，见下表</td></tr><tr><td>decision / board</td><td>审核决定与发布位置</td></tr><tr><td>score / referenceScore</td><td>0–100 分；未完成时可为 null</td></tr><tr><td>duration / completedAt</td><td>记录用时、通关 Unix 时间</td></tr><tr><td>platform / architecture</td><td>平台与编译架构</td></tr><tr><td>created / updated</td><td>服务端接收、更新时间</td></tr><tr><td>verdict / report</td><td>评判结论、完整报告；未完成时 report 为 null</td></tr><tr><td>playable / tags</td><td>回放是否可用、成绩标签</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>status</th><th>含义</th><th>继续轮询</th></tr></thead><tbody><tr><td>queued / processing</td><td>排队 / 正在评判</td><td>是</td></tr><tr><td>done</td><td>评判完成</td><td>否</td></tr><tr><td>invalid</td><td>认证或格式校验失败</td><td>否</td></tr><tr><td>duplicate</td><td>同一通关记录已存在</td><td>否</td></tr><tr><td>error</td><td>评判未完成，需要管理员处理</td><td>否</td></tr></tbody></table></div>
+<p><code>decision</code> 为 pending、approved、rejected；<code>board</code> 为 hidden、ranked、unranked。HTTP 成功、文件有效、评判通过和公开展示是不同状态。最终展示位置以查询接口顶层字段为准。</p></section>
+<section id="report"><h2>报告结构</h2><p>上传 Key 提交对应的回执，以及管理会话，可以读取完整报告。普通网页回执与公开成绩只返回文字化报告。</p>
+<div class="table-wrap"><table><thead><tr><th>字段</th><th>内容</th></tr></thead><tbody><tr><td>reportVersion / generatedAt</td><td>报告版本、生成时间</td></tr><tr><td>verdict / label</td><td>accepted、accepted_limited、review、rejected、not_assessed 及文字说明</td></tr><tr><td>importChecks</td><td>封装、认证、解压、签名、格式检查结果</td></tr><tr><td>rules</td><td>各项检查：id、title、status、reason、checked、violations，以及私有证据</td></tr><tr><td>failed / review / disabled / insufficient</td><td>各状态的检查编号列表</td></tr><tr><td>proof / metrics</td><td>记录摘要与运动、计时、战斗统计</td></tr><tr><td>bot</td><td>行为特征与自动化相似度</td></tr><tr><td>performance</td><td>score、referenceScore、grade、components、adjustments 与成绩评价</td></tr><tr><td>policy / platformPolicy</td><td>评判与发布时使用的策略快照</td></tr><tr><td>engine / coverage / limitations</td><td>评判覆盖范围、引擎信息与适用限制</td></tr></tbody></table></div><p>认证、格式失败不能视为有效成绩。有效通关成绩按通关、竞速、金币、战术与评判调整计算；ranked 和 unranked 均可计分。具体权重由管理员配置，接入方应使用返回分数，不在本地重算。</p><p>规则证据为有上限的展示样本，不代表只检查这些帧。行为相似度是复核线索，不能视为作弊概率。</p></section>
+<section id="koh"><h2>KOH 赛事接入</h2><p>使用 KOH 用途的 Key。容器先检查摘要，再上传文件，最后轮询分数。Key 由部署配置注入，不向选手网页返回。</p><ol class="guide-steps"><li>本地计算 SHA-256 和文件字节数。</li><li>调用 lookup，判断是否需要传输。</li><li><code>uploadRequired=true</code> 时上传，否则直接处理返回结果。</li><li>轮询 results，向赛事平台返回 0–100 的原始分数。</li></ol>
+<h3>1. 摘要预检</h3><div class="endpoint"><span class="method">POST</span><code>/api/koh/{key}/lookup</code></div><pre><code>{
+  "sha256": "64 位小写十六进制摘要",
+  "bytes": 123456,
+  "instance": "0123456789abcdef0123456789abcdef",
+  "context": { "problem_id": 42, "submission_id": 7 },
+  "source_id": "YOUR_INSTANCE_HOST",
+  "source_kind": "configured"
+}</code></pre>
+<div class="table-wrap"><table><thead><tr><th>字段</th><th>要求</th></tr></thead><tbody><tr><td>sha256 / bytes</td><td>必填；声明原文件摘要与大小，1 字节至 15 MiB</td></tr><tr><td>instance</td><td>必填；容器启动生成的 32 位小写十六进制标识</td></tr><tr><td>context</td><td>仅含 problem_id、submission_id；正整数，小于 2⁶³</td></tr><tr><td>source_id</td><td>可选；私有来源标识，最多 256 字符</td></tr><tr><td>source_kind</td><td>可选；configured、context、page_host、request_host、forwarded_host、provided、unspecified</td></tr></tbody></table></div><pre><code>// 需要上传 · HTTP 200
+{ "known": false, "status": "awaiting_upload", "uploadRequired": true }
+
+// 已被其他提交使用 · HTTP 200
+{
+  "known": true, "status": "done", "uploadRequired": false,
+  "result": { "code": 200, "score": 0, "max_score": 100,
+              "feedback": "凭证已被提交，本次得分为 0。" }
+}</code></pre><p>同一 Key、题目编号和提交编号绑定同一份文件；修改绑定的摘要或大小返回 <code>409 / submission_conflict</code>。相同提交重试可查询自己的处理结果，其他提交使用相同凭证直接得到 0 分。</p>
+<h3>2. 上传凭证</h3><div class="endpoint"><span class="method">POST</span><code>/api/koh/{key}/proofs/{problem_id}/{submission_id}</code></div><pre><code>Content-Type: application/octet-stream
+X-KOH-Instance: 0123456789abcdef0123456789abcdef
+
+请求体：原始凭证字节</code></pre><p>必须先通过 lookup。字节数与摘要必须匹配预检记录。可带查询参数 <code>name</code>；默认展示名为 <code>KOH #{submission_id}</code>。首次接收返回：</p><pre><code>// HTTP 202
+{ "status": "queued", "uploadRequired": false,
+  "id": "0123456789abcdef01234567" }</code></pre>
+<h3>3. 查询分数</h3><div class="endpoint"><span class="method get">GET</span><code>/api/koh/{key}/results/{problem_id}/{submission_id}</code></div><pre><code>// HTTP 200 · 完成
+{
+  "status": "done", "uploadRequired": false,
+  "id": "0123456789abcdef01234567",
+  "result": { "code": 200, "score": 68.45, "max_score": 100,
+              "feedback": "成绩与回放：https://halls.z4ck.dev/run/…" },
+  "runUrl": "/run/0123456789abcdef01234567"
+}</code></pre><p>排队和处理中返回 <code>status=queued/processing</code>，没有 result。服务或评判故障返回 <strong>503</strong> 与 <code>status=error</code>，不能记为选手 0 分。无效或重复凭证的完成结果为 0 分。成绩按全自动审核进入 ranked 或 unranked。</p><p>容器网页后端对新提交限制为每 60 秒一次，赛事提交重试使用同一编号。建议赛事评测超时设置为 120 秒。</p></section>
+<section id="public"><h2>公开数据与回放</h2><p>成绩报告的 <code>performance.raceReference</code> 提供保存的竞速参考时间。<code>GET /api/runs/{id}/race-reference</code> 按记录可见性提供参考路线的世界坐标，最多 8192 点；近似值标记 <code>approximate=true</code>。参考固定为出生点直奔原始出口，不为金币绕路，读取不会重新评判。</p><div class="endpoint"><span class="method get">GET</span><code>/api/runs?board=ranked&amp;sort=score&amp;page=1&amp;q=Player</code></div><p>board：all（默认积分总榜）、ranked 或 unranked；sort：score、speed、recent；page：1–1000；q：最多 32 字符。总榜合并已公开的两类记录后统一排序、分页，每页最多 25 条；每条记录保留 board，并提供用于排序和展示的 displayScore；rank 只对 RANKED 按当前排序计名次，在搜索和分页前计算，UNRANKED 的 rank 为 null，不占名次。返回 items、total、page、pages、stats、boards、board、boardCounts。</p><div class="endpoint"><span class="method get">GET</span><code>/api/runs/{id}</code></div><p>只对已公开记录提供详情与文字报告。可播放的公开记录带 <code>replayBase</code>；展示回放为平台二进制数据，不包含原始凭证。</p><div class="endpoint"><span class="method get">GET</span><code>{replayBase}/manifest.bin</code></div><p>公开回放使用独立 CDN 路由，无需认证；资源可能随下架撤回，客户端应使用详情返回的地址，不拼接版本摘要。</p><p>未公开成绩的管理回放和独立预览使用私有接口、短期票据与 Cookie，不经过公开 CDN。独立预览由本站 <code>/preview</code> 操作，转换后只保留展示数据和原文件摘要，不创建成绩。</p><div class="endpoint"><span class="method get">GET</span><code>/api/downloads</code></div><p>返回 items 与空状态提示。开放下载时，清单包含平台、架构、文件大小与 SHA-256；游戏下载关闭时文件直链返回 403。</p><div class="endpoint"><span class="method get">GET</span><code>/download=halls?platform=windows&amp;arch=x86_64</code></div><p>平台：windows、macos、linux。架构以下载清单为准，不支持的组合返回 404。</p></section>
+<section id="admin"><p>管理员通过本机独立服务的 /admin 访问后台。公开服务不提供后台入口。</p><h2>管理接口</h2><p>除文件上传外，写请求需 <code>Content-Type: application/json</code>，并在 <code>X-CSRF-Token</code> 中携带 session 返回的 csrf。</p>
+<div class="table-wrap"><table><thead><tr><th>方法 / 路径</th><th>用途 / 请求</th></tr></thead><tbody><tr><td>GET <code>/api/admin/session</code></td><td>查询当前会话 csrf</td></tr><tr><td>GET <code>/api/admin/runs</code></td><td>filter：all、pending、published、rejected、error；page；每页最多 30 条</td></tr><tr><td>POST <code>/api/admin/runs/{id}</code></td><td>修改 decision、board、tags、note；省略项保留原值</td></tr><tr><td>DELETE <code>/api/admin/runs/{id}</code></td><td><code>{"confirm":"记录完整 id"}</code>；仅管理员及 CSRF 校验通过后操作。彻底删除成绩、凭证、回放、关联预览及赛事提交记录。正在处理返回 409，文件清理失败返回 503，可重试。</td></tr><tr><td>POST <code>/api/admin/runs/{id}/rejudge</code></td><td>按当前规则重新评判并暂时下架</td></tr><tr><td>GET <code>/api/admin/runs/{id}/report</code></td><td>下载完整 JSON 报告</td></tr><tr><td>GET / POST <code>/api/admin/settings</code></td><td>读取策略、revision、rules、defaults；保存 <code>{policy,revision}</code>，字段需完整；旧 revision 返回 409</td></tr><tr><td>GET / POST <code>/api/admin/keys</code></td><td>列出 Key 摘要；创建请求 <code>{"label":"名称","scope":"upload"}</code>，scope 可为 koh；返回 id、key</td></tr><tr><td>POST <code>/api/admin/keys/{id}/revoke</code><br>POST <code>/api/admin/keys/{id}/restore</code></td><td>停用 / 恢复，必填 <code>{"confirmed":true}</code>；最多同时启用 20 个 Key</td></tr><tr><td>POST <code>/api/admin/uploads?name=…</code></td><td>管理后台上传原始凭证；使用二进制体与 CSRF 头</td></tr><tr><td>GET <code>/api/admin/submission-sources</code><br>GET <code>/api/admin/submission-sources.csv</code></td><td>私有来源记录 / CSV；可带 q 搜索，JSON 支持 page，每页 30 条</td></tr><tr><td>GET <code>/api/admin/storage</code></td><td>磁盘、平台配额、处理预留与接收状态</td></tr><tr><td>GET <code>/api/admin/audit</code></td><td>最近 100 条操作摘要；<code>/api/admin/audit/{entry_id}</code> 查询单条详情</td></tr></tbody></table></div><p>来源标识、容器实例和赛事提交编号仅用于后台核验，公开详情、成绩列表与回放均不返回这些字段。CSV 时间为 UTC，文件摘要预检记录可标为尚未核验。</p></section>
+<section id="errors"><h2>错误与重试</h2><pre><code>{ "error": "错误说明", "code": "duplicate_hash" }</code></pre><p>接口错误通常为 JSON。上游网络或安全服务可能返回 HTML，应先检查状态码和 Content-Type，再解析响应体。</p><div class="table-wrap"><table><thead><tr><th>HTTP</th><th>含义</th><th>调用方处理</th></tr></thead><tbody><tr><td>400 / 415</td><td>参数、摘要、文件长度或类型无效</td><td>修正请求，不原样重试</td></tr><tr><td>401</td><td>Key 无效或已撤销</td><td>检查凭据 / 重新登录</td></tr><tr><td>403</td><td>入口关闭、用途错误、Origin 或 CSRF 不符</td><td>检查后台设置和请求上下文</td></tr><tr><td>404</td><td>不存在、未公开、管理会话失效或回执不可用</td><td>检查编号与凭据</td></tr><tr><td>409</td><td>重复摘要、提交绑定或策略版本冲突</td><td>停止重复上传；读取最新版本后处理冲突</td></tr><tr><td>413</td><td>文件超出大小限制</td><td>不重试同一文件</td></tr><tr><td>429</td><td>频率、队列或访问额度限制</td><td>遵循 Retry-After，退避并加入随机延迟</td></tr><tr><td>500 / 503</td><td>服务、容量或评判暂不可用</td><td>保留原提交信息，稍后查询；不要换编号反复上传</td></tr></tbody></table></div><p>当前默认：普通 API 上传每 Key 与每 IP 每小时 60 次；网页成绩上传每 IP 每小时 6 次；总接收和处理队列上限 8 个。KOH API 每 Key 每分钟 600 个请求；新提交频率由容器网页后端限制。限流和存储配额可随部署调整。</p><p>认证失败的报告可能额外包含 stage、checks、importAccepted=false。即使签名通过，结构或数据校验失败仍是无效文件。</p></section>
+</article></div></main><footer><span>HALLS · API REFERENCE</span><a href="/admin">管理控制台</a></footer></body></html>

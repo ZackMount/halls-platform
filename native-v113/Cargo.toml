@@ -1,0 +1,16 @@
+[package]
+name="halls"
+version="0.11.3"
+edition="2024"
+rust-version="1.88"
+autobins=false
+[features]
+default=[]
+tools=[]
+size-audit=[]
+[profile.release]
+opt-level="z"
+lto="fat"
+panic="abort"
+codegen-units=1
+strip="symbols"

@@ -1,0 +1,114 @@
+[
+  {
+    "version": "0.10.1",
+    "recordingBuild": 655361,
+    "seed": "42",
+    "exit": [
+      1,
+      241
+    ],
+    "spawn": [
+      251,
+      99
+    ],
+    "bitmapSha256": "b798cd9eb4f4a34ae61a6cd8f604cfb3fde88608b2f66137a3889c0d49b6e9b1"
+  },
+  {
+    "version": "0.10.1",
+    "recordingBuild": 655361,
+    "seed": "2026",
+    "exit": [
+      253,
+      253
+    ],
+    "spawn": [
+      65,
+      81
+    ],
+    "bitmapSha256": "c92868f67d1de0d3781004dcc0850fc939e933f6d802d88e74aaa820a9b3989c"
+  },
+  {
+    "version": "0.10.1",
+    "recordingBuild": 655361,
+    "seed": "987654321",
+    "exit": [
+      1,
+      26
+    ],
+    "spawn": [
+      415,
+      275
+    ],
+    "bitmapSha256": "2a1868214b499d3f835cdd0cc6472734b496e0249fc055c5ba544dd6350ea8a5"
+  },
+  {
+    "version": "0.10.1",
+    "recordingBuild": 655361,
+    "seed": "18446744073709551615",
+    "exit": [
+      3,
+      243
+    ],
+    "spawn": [
+      441,
+      221
+    ],
+    "bitmapSha256": "76e0fc60a6304c3d8c6cfca64038df0f3b88b0cfc4ceb01ad861f668bc0ee09b"
+  },
+  {
+    "version": "0.10.3",
+    "recordingBuild": 655362,
+    "seed": "42",
+    "exit": [
+      54,
+      226
+    ],
+    "spawn": [
+      377,
+      121
+    ],
+    "bitmapSha256": "47cd051423f8bd7015fb6115088e2a85116715fe8a82b5ee172f6d25d55c90dc"
+  },
+  {
+    "version": "0.10.3",
+    "recordingBuild": 655362,
+    "seed": "2026",
+    "exit": [
+      1,
+      1
+    ],
+    "spawn": [
+      243,
+      379
+    ],
+    "bitmapSha256": "a3f8954e29cb52823ff68a0cd72c8030a197e24589f08d7852647fe70999b56d"
+  },
+  {
+    "version": "0.10.3",
+    "recordingBuild": 655362,
+    "seed": "987654321",
+    "exit": [
+      173,
+      222
+    ],
+    "spawn": [
+      353,
+      61
+    ],
+    "bitmapSha256": "013ba98b5d57e6ef241a70cd78858f3731cba3b77141faa266adb76aac96b1c4"
+  },
+  {
+    "version": "0.10.3",
+    "recordingBuild": 655362,
+    "seed": "18446744073709551615",
+    "exit": [
+      197,
+      248
+    ],
+    "spawn": [
+      259,
+      93
+    ],
+    "bitmapSha256": "7a7cab688a672999c4b8465b1c79b840f7e737b0b45a1254818e05fe2596d19a"
+  }
+]

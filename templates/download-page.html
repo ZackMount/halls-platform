@@ -1,0 +1,16 @@
+<h1>下载</h1>
+{% if not items %}
+<section class="panel"><h2>{{ '暂无可用下载' if enabled else '游戏下载暂未开放' }}</h2>{% if scheduled %}<p class="mono" data-download-countdown data-opens-at="{{ opensAt }}" data-server-time="{{ serverTime }}" data-no-i18n role="timer">距离开放下载还有 {{ countdown }}</p>{% endif %}</section>
+{% else %}
+<div class="download-grid">
+{% for platform,name,requirement in [('windows','Windows','Windows 10 / 11 · 64 位'),('macos','macOS','macOS 13 及以上'),('linux','Linux','glibc 2.34+ · OpenSSL 3')] %}
+<section class="panel"><h2>{{ name }}</h2><p class="download-requirement">{{ requirement }}</p>
+{% set builds=items|selectattr('product','equalto','halls')|selectattr('platform','equalto',platform)|list %}
+{% for universal in [true,false] %}{% for item in builds if (item.arch=='universal')==universal %}
+<a class="download-item" href="{{ item.url }}"><span>{{ item.archLabel or item.arch }}</span><span>{{ '%.0f'|format(item.bytes/1024) }} KiB <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 17v4h14v-4"/></svg></span></a>
+{% endfor %}{% endfor %}
+{% if not builds %}<p>正在准备</p>{% endif %}
+</section>
+{% endfor %}
+</div>
+{% endif %}

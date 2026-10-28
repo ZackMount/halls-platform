@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {createAdminCache} from '../web/admin-cache.js';
+let now=100,requests=0,resolve;
+const cache=createAdminCache(async()=>{requests++;return {policy:{on:true},items:[1]};},{now:()=>now,ttl:30});
+const first=await cache.get('/api/admin/settings');first.policy.on=false;
+assert.equal((await cache.get('/api/admin/settings')).policy.on,true,'editing one form cannot mutate cached policy');
+assert.equal(requests,1);now+=31;await cache.get('/api/admin/settings');assert.equal(requests,2);
+await cache.get('/api/admin/settings',{fresh:true});assert.equal(requests,3);
+cache.seed('/api/admin/runs?filter=all&page=1',{items:[]});await cache.get('/api/admin/runs?filter=all&page=1');assert.equal(requests,3,'SSR seed skips request');
+cache.clear();await cache.get('/api/admin/settings');assert.equal(requests,4,'mutations require fresh reads');
+for(const url of ['/api/admin/settings-extra','/api/admin/runs/private/report','/api/submissions/private','/api/admin/password','/api/config'])await assert.rejects(cache.get(url));
+let n=0;const delayed=createAdminCache(()=>{n++;return new Promise(r=>resolve=r);});
+const a=delayed.get('/api/admin/keys'),b=delayed.get('/api/admin/keys');assert.equal(n,1,'prefetch and click share one request');resolve({items:[]});await Promise.all([a,b]);
+const stale=delayed.get('/api/admin/keys',{fresh:true});delayed.clear();resolve({items:['old']});await stale;
+const next=delayed.get('/api/admin/keys');assert.equal(n,3,'late responses cannot repopulate a cleared session cache');resolve({items:['new']});assert.deepEqual((await next).items,['new']);
+console.log('Private admin cache: seed, expiry, deduplication, isolation and mutation invalidation passed');

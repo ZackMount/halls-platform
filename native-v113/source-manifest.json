@@ -1,0 +1,29 @@
+{
+  "build": "0x000b0003",
+  "clientRevision": "eaaf9baccb01ab288fc90325ca9deb89ac15f83a",
+  "files": {
+    "src/battery.rs": "a435df13550e12eda0eff8bd65df3b593df99299dc117d3d0731622c91ed35a9",
+    "src/bitmap.rs": "a54e1189ff4d57ad88c6fdb86301c5d4d17aabf6f44f1e04ea3a086114635ec5",
+    "src/entity.rs": "7628b1b7ebc86c2ea1f3b2e833572e25edbb9c12eb5922bae049363ad7d22823",
+    "src/entity_model.hvm": "2dd025c180855a5d0e04c92896f1e85b600300cedd6ae29aa7799be4814c9c6b",
+    "src/entity_program.rs": "43659b35d034f1f7f2a7837b8f591f82f81fcc57454a1bd86522b66ff1d59386",
+    "src/entity_vm.s": "03647eeb55d81e12f24bb7d4e26e14e010af83e979ed16e5ce8b2febb87d8cfb",
+    "src/error.rs": "02b13acad50cfc7dc24ec6b43fc647925db727eece4529ca1fe16f5317090a49",
+    "src/game.rs": "acb2de1a4f5b1b9cd25f831ae29c1fe7d8aa34fc62ad9bed1ba5cda005dc05fc",
+    "src/math.rs": "4f731d95bbe7030f2025a463d6c99ce21669a7480ee2f64a8bb1f809741cdd6c",
+    "src/math_x87.rs": "98038a2c0c4d777cb465359ccca4a09f6b28525e57dcfa76f8e144c3bde63b2e",
+    "src/mesh.rs": "9ee09c943a6379d49253ed73da80cb42b596b673e4a8bbd792b32dbafdac196e",
+    "src/player.rs": "e57ac2b29e4dcda6d5e26d6d542bb02172a73af2568d2ee2c2e55696547f8eb6",
+    "src/runtime.rs": "ed0c04e0d476ce7f30939fb11a861f758fc8922f826d01f64b2ffffd4c823411",
+    "src/world.rs": "b0c261cdb071c8dbc6c4a20b74e5ec68b385f7c3bab21d863875efc03e376bb9",
+    "src/map_generator.rs": "82e7b02dd6784d8be9f2c306cf10f5899e954061ec12ecb38c79eefe7ec2811f",
+    "src/map_grammar.rs": "ae5d7f596d9fe04665ff0b686ce1f6c8f41fda3a494be0ab4b122c1e6856e807",
+    "src/map_file.rs": "58bff51c74d472af0b570c6fd350bc1a44a8d94273c1eefd967b0f28d8eb3f3f",
+    "src/lighting.rs": "c5c84b7a3d00b7c095e4e184b84686e77d40d5b412517a68003fab38c7b81845"
+  },
+  "frozenFromPlatformRevision": "05376d72f550446a9c0ccd7d3ed7c88a5641592e",
+  "supportedBuilds": [
+    "0x000b0002",
+    "0x000b0003"
+  ]
+}

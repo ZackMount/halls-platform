@@ -1,0 +1,26 @@
+[Unit]
+Description=HALLS Records isolated judge worker
+After=network.target
+[Service]
+User=halls
+Group=halls
+SupplementaryGroups=halls-judge
+WorkingDirectory=/opt/halls/current
+EnvironmentFile=/etc/halls/platform.env
+ExecStart=/opt/halls/current/.venv/bin/python worker.py
+Restart=on-failure
+RestartSec=3
+KillMode=control-group
+TimeoutStopSec=10
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/halls
+MemoryHigh=750M
+MemoryMax=850M
+CPUQuota=150%
+TasksMax=64
+[Install]
+WantedBy=multi-user.target

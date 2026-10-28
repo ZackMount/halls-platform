@@ -1,0 +1,32 @@
+{
+  "source": "https://raw.githubusercontent.com/notofonts/noto-cjk/Sans2.004/Sans/Variable/TTF/Subset/NotoSansSC-VF.ttf",
+  "sha256": "d68bafcb48a2707749396aa12bbbd833cb70401f3a9a689fd2902c7e0d295964",
+  "subsets": [
+    {
+      "file": "ui.woff2",
+      "glyphs": 266,
+      "bytes": 74028
+    },
+    {
+      "file": "ui-pages.woff2",
+      "glyphs": 344,
+      "bytes": 96192
+    },
+    {
+      "file": "ui-guide.woff2",
+      "glyphs": 99,
+      "bytes": 31476
+    },
+    {
+      "file": "ui-admin.woff2",
+      "glyphs": 100,
+      "bytes": 31936
+    },
+    {
+      "file": "ui-api.woff2",
+      "glyphs": 67,
+      "bytes": 21564
+    }
+  ],
+  "license": "OFL.txt"
+}

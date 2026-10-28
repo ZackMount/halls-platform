@@ -1,0 +1,22 @@
+[Unit]
+Description=HALLS Records web API
+After=network.target
+[Service]
+User=halls
+Group=halls
+WorkingDirectory=/opt/halls/current
+EnvironmentFile=/etc/halls/platform.env
+ExecStart=/opt/halls/current/.venv/bin/gunicorn --bind 127.0.0.1:8770 --workers 1 --threads 4 --timeout 35 --max-requests 1000 --max-requests-jitter 100 --access-logfile - --access-logformat '%%(h)s %%(m)s %%(s)s %%(B)s %%(L)s' app:app
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/halls
+MemoryMax=200M
+TasksMax=64
+[Install]
+WantedBy=multi-user.target

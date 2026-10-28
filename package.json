@@ -1,0 +1,12 @@
+{
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  },
+  "private": true,
+  "scripts": {
+    "build:web": "node tools/build_web.mjs",
+    "check:web": "node tools/build_web.mjs --check"
+  },
+  "name": "halls-platform-web",
+  "type": "module"
+}

@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {coinPose,replayCoins,PICKUP_SECONDS} from '../web/replay/coins.js';
+import {createCoinModel,updateCoinModel} from '../web/replay/coin-model.js';
+const coins=replayCoins({coins:[{id:0,cell:[3,4],position:[7,9]},{id:1,cell:[8,9],position:[17,19]}],coinPickups:[{id:0,time:5}]});
+assert.equal(coins[0].pickupTime,5);assert.equal(coins[1].pickupTime,null);
+assert.equal(coinPose(4,5).collected,false);assert.equal(coinPose(5,5).collected,true);
+assert.equal(coinPose(5+PICKUP_SECONDS,5).visible,false);
+assert.equal(coinPose(4,5).visible,true,'seeking backward restores the coin');
+assert.equal(coinPose(60,null).visible,true,'uncollected coins stay present');
+const model=createCoinModel(coins[0]);
+updateCoinModel(model,5,5,5);assert.equal(model.visible,true);assert.equal(model.userData.sparks.visible,true);
+updateCoinModel(model,6,5,6);assert.equal(model.visible,false);
+updateCoinModel(model,4,5,4);assert.equal(model.visible,true);assert.equal(model.userData.sparks.visible,false);
+assert.deepEqual(model.position.toArray(),[7,0,-9]);
+console.log('Coin collection timeline, backward seeks, permanent uncollected coins and production model transforms passed');

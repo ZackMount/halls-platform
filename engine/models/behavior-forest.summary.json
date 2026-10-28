@@ -1,0 +1,133 @@
+{
+  "modelSha256": "9af0cd0a9634ddafd862c278e3e1dbba26178477bdf98f29dafc36c419ee6d44",
+  "bytes": 136792,
+  "training": {
+    "tool": "sklearn.RandomForestClassifier",
+    "sklearn": "1.9.1",
+    "host": "Darwin/arm64",
+    "seed": 20261023,
+    "treesPerProtocol": 160,
+    "featureSchema": "controls-2",
+    "humanRecordings": 3,
+    "recordedBotRecordings": 22,
+    "labelledBotRecordings": 27,
+    "heldOutBotRecordings": 1,
+    "syntheticFamilies": [
+      "timer",
+      "refresh",
+      "bangbang",
+      "waypoint",
+      "noisy_waypoint",
+      "pursuit",
+      "pid",
+      "easing",
+      "macro",
+      "grid"
+    ],
+    "syntheticRuns": 240,
+    "dataFingerprint": "39d00abe323361ad9aad711d6f629fa72fa2f38b0e22544bcdbb26c4faee28f0",
+    "humanInputModes": [
+      "held"
+    ],
+    "protocolCoverage": {
+      "held": "confirmed_recordings",
+      "pulse": "same-human-group terminal-buffer projections"
+    },
+    "sourceBalance": {
+      "held": 0.75,
+      "pulse": 0.9
+    },
+    "calibration": {
+      "held": {
+        "method": "whole-record-out human calibration with final-fit bot population and source weights",
+        "maximumHumanSupport": 0.903702409803714,
+        "margin": 0.02,
+        "operatingPoint": 0.923702409803714,
+        "isIndependentHumanTest": false
+      },
+      "pulse": {
+        "method": "whole-record-out human calibration with final-fit bot population and source weights",
+        "maximumHumanSupport": 0.9165979724229908,
+        "margin": 0.02,
+        "operatingPoint": 0.9365979724229908,
+        "isIndependentHumanTest": false
+      }
+    },
+    "humanAugmentationsAreIndependent": false,
+    "modelOutputIsCalibratedProbability": false,
+    "rawProofsIncluded": false
+  },
+  "evaluation": {
+    "held": {
+      "humanGroups": 3,
+      "humanCalibrationPenalties": 0,
+      "knownBotMisses": 0,
+      "recordedBotRecordings": 19,
+      "recordedSourceFamilyRuns": 19,
+      "recordedSourceFamilyDetected": 19,
+      "heldOutSyntheticRuns": 60,
+      "heldOutSyntheticDetected": 58,
+      "excludedSyntheticLineages": [
+        {
+          "lineage": "steering_feedback",
+          "excludedFamilies": [
+            "pursuit",
+            "pid"
+          ],
+          "runs": 48,
+          "detected": 38
+        },
+        {
+          "lineage": "axis_navigation",
+          "excludedFamilies": [
+            "waypoint",
+            "noisy_waypoint",
+            "grid"
+          ],
+          "runs": 72,
+          "detected": 48
+        }
+      ]
+    },
+    "pulse": {
+      "humanGroups": 3,
+      "humanCalibrationPenalties": 0,
+      "knownBotMisses": 0,
+      "recordedBotRecordings": 3,
+      "recordedSourceFamilyRuns": 3,
+      "recordedSourceFamilyDetected": 2,
+      "heldOutSyntheticRuns": 60,
+      "heldOutSyntheticDetected": 53,
+      "excludedSyntheticLineages": [
+        {
+          "lineage": "steering_feedback",
+          "excludedFamilies": [
+            "pursuit",
+            "pid"
+          ],
+          "runs": 48,
+          "detected": 32
+        },
+        {
+          "lineage": "axis_navigation",
+          "excludedFamilies": [
+            "waypoint",
+            "noisy_waypoint",
+            "grid"
+          ],
+          "runs": 72,
+          "detected": 36
+        }
+      ]
+    }
+  },
+  "heldOutRecordedBotRuns": 1,
+  "heldOutRecordedBotsDetected": 1,
+  "maximumPortableInferenceError": 2.220446049250313e-16,
+  "limitations": [
+    "Only three independent confirmed human recordings; no population false-positive estimate.",
+    "Pulse human coverage uses terminal-buffer projections, not independently recorded human macOS/Linux games.",
+    "Human folds and source-family comparisons are development/calibration evidence, not a blinded population test.",
+    "A sufficiently human-like controller can remain undetected."
+  ]
+}

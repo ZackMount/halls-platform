@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {createPageTransition} from '../web/page-transition.js';
+const timers=new Map(),classes=new Set(),attrs=new Map(),animations=[];let next=0;
+const root={innerHTML:'previous page',inert:false,setAttribute:(k,v)=>attrs.set(k,v),removeAttribute:k=>attrs.delete(k),animate:(...args)=>animations.push(args)};
+const host={classList:{add:k=>classes.add(k),remove:k=>classes.delete(k)}};
+const transition=createPageTransition(root,{host,schedule:fn=>{timers.set(++next,fn);return next;},cancel:id=>timers.delete(id),reduced:()=>false});
+const fast=transition.begin();assert.equal(root.innerHTML,'previous page');assert.equal(root.inert,true);transition.finish(fast);assert.equal(classes.size,0);assert.equal(timers.size,0);assert.equal(animations.length,0,'cached page switches do not flash a loader');
+const old=transition.begin(),newer=transition.begin();transition.finish(old);assert.equal(root.inert,true,'obsolete routes cannot release a newer transition');
+for(const fn of timers.values())fn();assert.ok(classes.has('page-loading'));assert.equal(root.innerHTML,'previous page');
+transition.finish(newer);assert.equal(root.inert,false);assert.equal(attrs.size,0);assert.equal(classes.size,0);assert.equal(animations.length,1);assert.equal(animations[0][1].duration,160);
+console.log('Previous-content retention, delayed loading indicator, instant cache switches and superseded navigation passed');

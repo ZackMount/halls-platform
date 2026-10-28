@@ -1,0 +1,6 @@
+<form id="upload-form">
+ <label>玩家名字<input name="name" required maxlength="32" placeholder="输入展示名字" autocomplete="nickname"></label>
+ <div id="dropzone" class="dropzone"><input id="proof-file" name="proof" type="file" accept=".hproof" hidden><div class="file-symbol" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 17V5m-5 5 5-5 5 5M5 17v4h14v-4"/></svg></div><strong id="chosen-file">拖入通关凭证</strong><span id="chosen-size">.hproof</span><label for="proof-file" class="button file-pick" tabindex="0">选择文件</label></div>
+ {% if consent %}<label class="check"><input name="publicationConsent" type="checkbox" required>公开我的名字、成绩和回放</label>{% endif %}
+ <div class="actions"><button class="primary wide" type="submit">{{ '上传并评判' if admin else '提交成绩' }}</button></div>
+</form><div id="upload-result" aria-live="polite" aria-atomic="true"></div>

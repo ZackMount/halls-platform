@@ -1,0 +1,68 @@
+services:
+  web:
+    build: .
+    image: halls-records:1.0.0
+    restart: unless-stopped
+    user: "10001:10001"
+    ports: ["127.0.0.1:8770:8000"]
+    environment:
+      HALLS_HOSTS: "${HALLS_HOSTS:-localhost,127.0.0.1}"
+      HALLS_ORIGIN: "${HALLS_ORIGIN:-http://127.0.0.1:8770}"
+      HALLS_HTTPS: "${HALLS_HTTPS:-0}"
+      HALLS_TRUST_PROXY: "${HALLS_TRUST_PROXY:-0}"
+      HALLS_PROXY_IPS: "172.30.24.1"
+      HALLS_STORAGE_GB: "${HALLS_STORAGE_GB:-20}"
+    volumes: ["./data:/data", "./downloads:/app/downloads:ro"]
+    mem_limit: 768m
+    cpus: 1
+    pids_limit: 128
+    read_only: true
+    tmpfs: ["/tmp:size=64m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+  admin:
+    build: .
+    image: halls-records:1.0.0
+    restart: unless-stopped
+    user: "10001:10001"
+    command: ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "1", "--threads", "4", "--timeout", "35", "admin_wsgi:app"]
+    ports: ["127.0.0.1:8771:8000"]
+    environment:
+      HALLS_ADMIN_HOSTS: "${HALLS_ADMIN_HOSTS:-localhost,127.0.0.1}"
+      HALLS_ADMIN_NETWORKS: "${HALLS_ADMIN_NETWORKS:-127.0.0.0/8,::1/128,172.30.25.1/32}"
+      HALLS_STORAGE_GB: "${HALLS_STORAGE_GB:-20}"
+    networks: [admin]
+    volumes: ["./data:/data", "./downloads:/app/downloads:ro"]
+    mem_limit: 768m
+    cpus: 1
+    pids_limit: 128
+    read_only: true
+    tmpfs: ["/tmp:size=64m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+  worker:
+    image: halls-records:1.0.0
+    restart: unless-stopped
+    command: ["python", "worker.py"]
+    environment:
+      HALLS_STORAGE_GB: "${HALLS_STORAGE_GB:-20}"
+      HALLS_TRUST: /run/secrets/trust.json
+    user: "10001:10001"
+    volumes: ["./data:/data", "./secrets/recipient.pem:/run/secrets/recipient.pem:ro", "./secrets/trust.json:/run/secrets/trust.json:ro"]
+    mem_limit: 3g
+    cpus: 2
+    pids_limit: 64
+    read_only: true
+    tmpfs: ["/tmp:size=64m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.24.0/24
+  admin:
+    ipam:
+      config:
+        - subnet: 172.30.25.0/24

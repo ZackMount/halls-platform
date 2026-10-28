@@ -1,0 +1,21 @@
+[Unit]
+Description=HALLS local administration
+After=network.target
+
+[Service]
+User=halls
+Group=halls
+WorkingDirectory=/opt/halls/current
+EnvironmentFile=/etc/halls/platform.env
+ExecStart=/opt/halls/current/.venv/bin/gunicorn --bind 127.0.0.1:8771 --workers 1 --threads 4 --timeout 35 admin_wsgi:app
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/halls
+
+[Install]
+WantedBy=multi-user.target
